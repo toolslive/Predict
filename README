@@ -1,0 +1,23 @@
+Predict
+=======
+
+I noticed a lot of chess players who prepare themselves for the Belgian Interteam Competition.
+They download the results of previous rounds, create a table and look up the games of the possible opponents.
+
+This script does the hard work, by downloading the results, parsing the html pages, and preparing the tables.
+
+
+Usage:
+------
+
+python -c <club number>
+
+Warning:
+--------
+It's not idiot proof.
+
+
+
+have fun,
+
+Romain.

@@ -1,11 +1,16 @@
 import httplib, urllib
 import os.path
 import sys
+import htmllib
+import formatter
 
-nextr = 10
+from optparse import OptionParser
 
+nextr = 11 # TODO: don't hardcode
+
+CACHE_DIR = './cache'
 def make_fn(club,r):
-    return './cache/%s_%s.html' % (club,r)
+    return '%s/%s_%s.html' % (CACHE_DIR, club, r)
 
 def get_round(club,round):
     headers = {"Accept": "text/plain"}
@@ -54,8 +59,6 @@ def read_data(club, round):
     return data
 
 
-import htmllib
-import formatter
 
 def to_dict(attrl):
     d = {}
@@ -132,7 +135,7 @@ class MyParser(htmllib.HTMLParser):
             #print self._table, self._tr, self._td, line
             key = str(self._club)
             if line.find('(') > 0 and line.find(')'):
-                print "CLUB", line, self._clubs
+                #print "CLUB", line, self._clubs
                 if line.find(key) > 0:
                     self._where[self._teams] = self._clubs
 
@@ -143,11 +146,11 @@ class MyParser(htmllib.HTMLParser):
 
 
 def take(bords, where, players, round):
-    print where
+    #print where
     team = 1
     for k in bords.keys():
         g = bords[k]
-        print k,g
+        #print k,g
         side = where[team]
         pn = g[side]
         if not players.has_key(pn):
@@ -227,8 +230,19 @@ brasschaat = 174
 crelel = 601
 eynatten = 604
 
+
 def main():
-    club = int(sys.argv[1])
+
+    if not os.path.exists(CACHE_DIR):
+        os.mkdir(CACHE_DIR)
+
+    parser = OptionParser()
+    parser.add_option("-c","--club", 
+                      dest = "club", type = "int", 
+                      default = leuven,
+                      help = "number of the club")
+    options, args = parser.parse_args()
+    club = options.club
     for r in range(1,nextr):
         get(club,r)
     predict(club)
