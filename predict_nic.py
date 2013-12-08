@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import httplib, urllib
 import os.path
 import sys
@@ -5,8 +6,6 @@ import htmllib
 import formatter
 
 from optparse import OptionParser
-
-nextr = 11 # TODO: don't hardcode
 
 CACHE_DIR = './cache'
 def make_fn(club,r):
@@ -22,7 +21,7 @@ def get_round(club,round):
     cookie = response.getheader('set-cookie')
     data = response.read()
 
-    form = {'user': '0', 
+    form = {'user': '0',
             'val_clb': club,
             'val_rnd': round,
             'search':'Search'
@@ -121,6 +120,8 @@ class MyParser(htmllib.HTMLParser):
                 p = d['value']
                 self._r[b][0] = p
                 #print p,'-',
+            if self._td == 6:
+                self._r[b][0] = self._r[b][0] + ' (' + d['value'] + ')'
             if self._td == 7:
                 p =  d['value']
                 self._r[b][1] = p
@@ -129,30 +130,30 @@ class MyParser(htmllib.HTMLParser):
                 self._r[b]['team'] = self._team
                 self._board = self._board + 1
                 #print self._team
+            if self._td == 8:
+                self._r[b][1] = self._r[b][1] + ' (' + d['value'] + ')'
+
     def handle_data(self,data):
         if self._table == 3 and self._tr >= 2 and self._td == 1:
             line = data.strip()
             #print self._table, self._tr, self._td, line
             key = str(self._club)
             if line.find('(') > 0 and line.find(')'):
-                #print "CLUB", line, self._clubs
                 if line.find(key) > 0:
                     self._where[self._teams] = self._clubs
-
-                self._clubs = self._clubs + 1
-                if self._clubs == 2:
-                    self._clubs = 0
+                self._clubs = 1 - self._clubs
+                if self._clubs == 0:
                     self._teams = self._teams + 1
+                #print "CLUB", line, self._clubs
 
 
 def take(bords, where, players, round):
-    #print where
-    team = 1
     for k in bords.keys():
         g = bords[k]
-        #print k,g
+        team = g['team']
         side = where[team]
         pn = g[side]
+        #print k,g,side
         if not players.has_key(pn):
             players[pn] = []
         sofar = players[pn]
@@ -160,13 +161,13 @@ def take(bords, where, players, round):
         sofar.append(pos)
 
 
-def get(club,r):        
+def get(club,r):
     fn = make_fn(club,r)
     if not os.path.exists(fn):
         data = get_round(club,r)
         write_data(data,club,r)
 
-def predict(club):
+def predict(club, nextr):
     players = {}
 
     def played_for(players, team):
@@ -188,10 +189,11 @@ def predict(club):
         parser.feed(data)
         r = parser._r
         where = parser._where
+        teams = parser._teams
         take(r, where, players, round)
 
 
-    for team_nr in range(1,6):
+    for team_nr in range(1, teams):
         team = played_for(players, team_nr)
         print "TEAM %i:" % team_nr
         result = []
@@ -201,7 +203,7 @@ def predict(club):
             for round in range(1, nextr):
                 played = False
                 for p in poss:
-                    r, t,b = p 
+                    r, t,b = p
                     if r == round and team_nr == t:
                         bs.append(b)
                         played = True
@@ -220,32 +222,25 @@ def predict(club):
                     code = code + str(b)
             print "\t%s\t%s" % (code,pn)
 
-mechelen = 114
-eisden = 703
-landegem = 430
-leuven = 230
-schoten = 141
-geel = 135
-brasschaat = 174
-crelel = 601
-eynatten = 604
-
-
 def main():
 
     if not os.path.exists(CACHE_DIR):
         os.mkdir(CACHE_DIR)
 
     parser = OptionParser()
-    parser.add_option("-c","--club", 
-                      dest = "club", type = "int", 
-                      default = leuven,
+    parser.add_option("-c","--club",
+                      dest = "club", type = "int",
+                      default = 230,
                       help = "number of the club")
+    parser.add_option("-r","--ronde",
+                      dest = "nextr", type = "int",
+                      help = "next round")
     options, args = parser.parse_args()
     club = options.club
+    nextr = options.nextr
     for r in range(1,nextr):
         get(club,r)
-    predict(club)
+    predict(club,nextr)
 
 
 if __name__ == '__main__':

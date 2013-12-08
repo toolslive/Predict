@@ -10,7 +10,7 @@ This script does the hard work, by downloading the results, parsing the html pag
 Usage:
 ------
 
-python -c <club number>
+python predict_nic.py -c <club number>
 
 Warning:
 --------
@@ -21,3 +21,6 @@ It's not idiot proof.
 have fun,
 
 Romain.
+
+
+PS. Steff Helsen send me a patch to include the ratings
