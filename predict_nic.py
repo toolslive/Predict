@@ -153,11 +153,21 @@ def take(bords, where, players, round):
         team = g['team']
         side = where[team]
         pn = g[side]
-        #print k,g,side
+        score = g['score']
+        value = {
+            '1-0':1,
+            '0-1':0,
+            '0.5':0.5,
+        }
+        result = 0
+        if value.has_key(score):
+            result = value[score]
+            if side == 1:
+                result = 1 - result
         if not players.has_key(pn):
             players[pn] = []
         sofar = players[pn]
-        pos = round, g['team'], g['board']
+        pos = round, g['team'], g['board'],result
         sofar.append(pos)
 
 
@@ -176,7 +186,7 @@ def predict(club, nextr):
             poss = players[pn]
             ok = False
             for pos in poss:
-                (r, t, b) = pos
+                (r, t, b, pr) = pos
                 if t == team:
                     ok = True
             if ok:
@@ -203,7 +213,7 @@ def predict(club, nextr):
             for round in range(1, nextr):
                 played = False
                 for p in poss:
-                    r, t,b = p
+                    r, t,b,pr = p
                     if r == round and team_nr == t:
                         bs.append(b)
                         played = True
@@ -220,7 +230,12 @@ def predict(club, nextr):
                     code = code + '-'
                 else:
                     code = code + str(b)
-            print "\t%s\t%s" % (code,pn)
+            r = 0
+            poss = players[pn]
+            for x in poss:
+                r = r + x[3] # result
+            size = len(poss)
+            print "\t%s\t%30s (%4s / %i)" % (code,pn, r,size)
 
 def main():
 
