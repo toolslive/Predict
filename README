@@ -12,6 +12,30 @@ Usage:
 
 python predict_nic.py -c <club number>
 
+The output will be something like this:
+
+
+    TEAM 1:
+        111211             PEEK MAURICE (2391) ( 3.5 / 6)
+        ---1--             AKESSON RALF (2469) ( 0.5 / 1)
+        22233-          TONOLI BENJAMIN (2211) ( 3.5 / 5)
+        ----23             LEUNIS GEERT (2294) ( 1.5 / 2)
+        -----2           VERMEULEN BRAM (2298) ( 0.5 / 1)
+        333444            GOOSSENS ROEL (2153) ( 4.0 / 6)
+        44-555           VAN ESPEN EDDY (2133) ( 1.0 / 5)
+        554666          VERHEYDEN JONAS (2129) ( 3.0 / 6)
+        665777       OLIVA OLAVE CARLOS (2118) ( 3.5 / 6)
+        -76---              WEILER MARC (2073) (   2 / 2)
+        78-888       DELANOEIJE PATRICK (2037) ( 2.5 / 5)
+        --7---          VAN NOTEN STIJN (1858) ( 0.5 / 5)
+        8-----           VAN PRAAG BART (1843) ( 2.0 / 4)
+        --8---                CUYT SVEN (1694) ( 2.0 / 5)
+    TEAM 2:
+        ...
+
+
+
+
 Warning:
 --------
 It's not idiot proof.
