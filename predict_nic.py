@@ -81,6 +81,7 @@ class MyParser(htmllib.HTMLParser):
         self._team = 1
         self._board = 1
         self._where = {}
+        self._clubname = ""
 
     def start_table(self,x):
         self._table = self._table + 1
@@ -136,15 +137,16 @@ class MyParser(htmllib.HTMLParser):
     def handle_data(self,data):
         if self._table == 3 and self._tr >= 2 and self._td == 1:
             line = data.strip()
-            #print self._table, self._tr, self._td, line
             key = str(self._club)
             if line.find('(') > 0 and line.find(')'):
                 if line.find(key) > 0:
                     self._where[self._teams] = self._clubs
+                    if self._clubname == "":
+                        self._clubname = line[0:line.find('(')-3]
+                        #print self._clubname
                 self._clubs = 1 - self._clubs
                 if self._clubs == 0:
                     self._teams = self._teams + 1
-                #print "CLUB", line, self._clubs
 
 
 def take(bords, where, players, round):
@@ -164,20 +166,20 @@ def take(bords, where, players, round):
             result = value[score]
             if side == 1:
                 result = 1 - result
-        if not players.has_key(pn):
-            players[pn] = []
-        sofar = players[pn]
-        pos = round, g['team'], g['board'],result
-        sofar.append(pos)
+        if pn != " ()":
+            if not players.has_key(pn):
+                players[pn] = []
+            sofar = players[pn]
+            pos = round, g['team'], g['board'],result
+            sofar.append(pos)
 
 
 def get(club,r):
     fn = make_fn(club,r)
-    if not os.path.exists(fn):
-        data = get_round(club,r)
-        write_data(data,club,r)
+    data = get_round(club,r)
+    write_data(data,club,r)
 
-def predict(club, nextr):
+def predict(club, prevr, teamnr):
     players = {}
 
     def played_for(players, team):
@@ -193,49 +195,103 @@ def predict(club, nextr):
                 result.append(pn)
         return result
 
-    for round in range(1,nextr):
+    def boards(players, team, teamnr, prevr):
+        result = {}
+        for pn in team:
+            result[pn]={}
+            for round in range(1, prevr+1):
+                result[pn][round]=0
+            poss = players[pn]
+            for pos in poss:
+                (r, t, b, pr) = pos
+                if t == teamnr:
+                    result[pn][r]=b
+        return result
+
+    def board_order(boards):
+        result = []
+        targetlength = len(boards.keys())
+        while len(result) < targetlength:
+            pns = boards.keys()
+            maxboard = 9
+            i = 0
+            while maxboard > 1:
+                pn = pns[i]
+                i = i + 1
+                maxboard = max(boards[pn].values())
+            result.append(pn)
+            for r in boards[pn].keys():
+                if boards[pn][r] == 1:
+                    for pnn in boards.keys():
+                        boards[pnn][r] = boards[pnn][r] - 1
+            del boards[pn]
+        return result
+
+
+    for round in range(1,prevr+1):
         data = read_data(club,round)
         parser = MyParser(formatter.NullFormatter(), club)
         parser.feed(data)
         r = parser._r
         where = parser._where
         teams = parser._teams
+        clubname = parser._clubname
         take(r, where, players, round)
 
+#   for team_it in range(1, teams):
+#       if teamnr == 0 or team_it == teamnr:
+#           team = played_for(players, team_it)
+#           print "%s %i:" % (clubname, team_it)
+#           result = []
+#           for pn in team:
+#               poss = players[pn]
+#               bs = []
+#               for round in range(1, prevr+1):
+#                   played = False
+#                   for p in poss:
+#                       r, t,b,pr = p
+#                       if r == round and team_it == t:
+#                           bs.append(b)
+#                           played = True
+#                   if not played:
+#                       bs.append(9)
+#               m = min(bs)
+#               result.append((m,bs,pn))
 
-    for team_nr in range(1, teams):
-        team = played_for(players, team_nr)
-        print "TEAM %i:" % team_nr
-        result = []
-        for pn in team:
-            poss = players[pn]
-            bs = []
-            for round in range(1, nextr):
-                played = False
-                for p in poss:
-                    r, t,b,pr = p
-                    if r == round and team_nr == t:
-                        bs.append(b)
-                        played = True
-                if not played:
-                    bs.append(9)
-            m = min(bs)
-            result.append((m,bs,pn))
+    for team_it in range(1, teams):
+        if teamnr == 0 or team_it == teamnr:
+            team = played_for(players, team_it)
+            boards_ = boards(players, team, team_it, prevr+1)
+            boards_ordered = board_order(boards_)
+            print "%s %i:" % (clubname, team_it)
+            result = []
+            for pn in boards_ordered:
+                poss = players[pn]
+                bs = []
+                for round in range(1, prevr+1):
+                    played = False
+                    for p in poss:
+                        r, t,b,pr = p
+                        if r == round and team_it == t:
+                            bs.append(b)
+                            played = True
+                    if not played:
+                        bs.append(9)
+                result.append((bs,pn))
 
-        sr = sorted(result)
-        for (m,c,pn) in sr:
-            code = ''
-            for b in c:
-                if b == 9:
-                    code = code + '-'
-                else:
-                    code = code + str(b)
-            r = 0
-            poss = players[pn]
-            for x in poss:
-                r = r + x[3] # result
-            size = len(poss)
-            print "\t%s\t%30s (%4s / %i)" % (code,pn, r,size)
+            for (c,pn) in result:
+                code = ''
+                for b in c:
+                    if b == 9:
+                        code = code + '-'
+                    else:
+                        code = code + str(b)
+                r = 0
+                poss = players[pn]
+                for x in poss:
+                    r = r + x[3] # result
+                size = len(poss)
+                print "\t%s\t%30s (%4s / %i)" % (code,pn, r,size)
 
 def main():
 
@@ -248,14 +304,20 @@ def main():
                       default = 230,
                       help = "number of the club")
     parser.add_option("-r","--ronde",
-                      dest = "nextr", type = "int",
+                      dest = "prevr", type = "int",
+                      default = 11,
                       help = "next round")
+    parser.add_option("-t","--teamnr",
+                      dest = "teamnr", type="int",
+                      default = 0,
+                      help = "limit output to just one team")
     options, args = parser.parse_args()
     club = options.club
-    nextr = options.nextr
-    for r in range(1,nextr):
+    prevr = options.prevr
+    teamnr = options.teamnr
+    for r in range(1,prevr+1):
         get(club,r)
-    predict(club,nextr)
+    predict(club,prevr,teamnr)
 
 
 if __name__ == '__main__':
