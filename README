@@ -10,41 +10,34 @@ This script does the hard work, by downloading the results, parsing the html pag
 Usage:
 ------
 
-python predict_nic.py -c <club number>
+>$ python predict_nic.py -c 230 -r 5 -s 2 -t 1
 
 The output will be something like this:
 
-
-    TEAM 1:
-        111211             PEEK MAURICE (2391) ( 3.5 / 6)
-        ---1--             AKESSON RALF (2469) ( 0.5 / 1)
-        22233-          TONOLI BENJAMIN (2211) ( 3.5 / 5)
-        ----23             LEUNIS GEERT (2294) ( 1.5 / 2)
-        -----2           VERMEULEN BRAM (2298) ( 0.5 / 1)
-        333444            GOOSSENS ROEL (2153) ( 4.0 / 6)
-        44-555           VAN ESPEN EDDY (2133) ( 1.0 / 5)
-        554666          VERHEYDEN JONAS (2129) ( 3.0 / 6)
-        665777       OLIVA OLAVE CARLOS (2118) ( 3.5 / 6)
-        -76---              WEILER MARC (2073) (   2 / 2)
-        78-888       DELANOEIJE PATRICK (2037) ( 2.5 / 5)
-        --7---          VAN NOTEN STIJN (1858) ( 0.5 / 5)
-        8-----           VAN PRAAG BART (1843) ( 2.0 / 4)
-        --8---                CUYT SVEN (1694) ( 2.0 / 5)
-    TEAM 2:
-        ...
-
-
-
+```
+Leuven 1:
+	code	NAME                           (elo ) ( s / g) avg  tpr 
+	---1-	AKESSON RALF                   (2462) (0.0/ 1) 2365 1445
+	-11-1	PEEK MAURICE                   (2375) (2.5/ 3) 2285 2565
+	--22-	LEUNIS GEERT                   (2292) (1.5/ 2) 2244 2435
+	-2332	TONOLI BENJAMIN                (2227) (1.0/ 4) 2264 2073
+	--4-3	PRAET MAARTEN                  (2215) (1.0/ 2) 2168 2168
+	-3--4	CEULEMANS KARL                 (2158) (0.0/ 2) 2230 1190
+	--545	GOOSSENS ROEL                  (2155) (1.0/ 3) 2156 2035
+	-4656	VERHEYDEN JONAS                (2148) (2.0/ 4) 2119 2119
+	-5767	VAN ESPEN EDDY                 (2087) (1.5/ 4) 2104 2016
+	-6-7-	VAN HUL CHRISTIAAN             (2062) (0.5/ 2) 2170 1980
+	-7888	DELANOEIJE PATRICK             (2003) (1.5/ 4) 2008 1919
+	-8---	DELAERE KOEN                   (1844) (1.0/ 3) 2098 1977
+```
 
 Warning:
 --------
-It's not idiot proof.
-
-
+It's not idiot proof, also it cannot handle bad inputs very gratiously.
 
 have fun,
 
 Romain.
 
 
-PS. Steff Helsen send me a patch to include the ratings
+PS. Steff Helsen sent me a patch to include the ratings
