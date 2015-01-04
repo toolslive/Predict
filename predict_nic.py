@@ -176,8 +176,9 @@ def take(bords, where, players, round):
 
 def get(club,r):
     fn = make_fn(club,r)
-    data = get_round(club,r)
-    write_data(data,club,r)
+    if not os.path.exists(fn):
+        data = get_round(club,r)
+        write_data(data,club,r)
 
 def predict(club, prevr, teamnr):
     players = {}
@@ -295,9 +296,6 @@ def predict(club, prevr, teamnr):
 
 def main():
 
-    if not os.path.exists(CACHE_DIR):
-        os.mkdir(CACHE_DIR)
-
     parser = OptionParser()
     parser.add_option("-c","--club",
                       dest = "club", type = "int",
@@ -312,6 +310,10 @@ def main():
                       default = 0,
                       help = "limit output to just one team")
     options, args = parser.parse_args()
+
+    if not os.path.exists(CACHE_DIR):
+        os.mkdir(CACHE_DIR)
+
     club = options.club
     prevr = options.prevr
     teamnr = options.teamnr
