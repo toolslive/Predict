@@ -214,7 +214,6 @@ def take(bords, where, players, round):
                 players[pn] = (p,[])
             sofar = players[pn]
             pos = round, g['team'], g['board'],result, elo_opp
-            print g
             sofar[1].append(pos)
 
 
@@ -251,30 +250,36 @@ def boards(players, team, teamnr, prevr):
                 result[pn][r]=b
     return result
 
-def predict(club, prevr, teamnr):
+def predict(start, club, prevr, teamnr):
     players = {}
 
-    def board_order(boards):
-        result = []
-        targetlength = len(boards.keys())
-        while len(result) < targetlength:
-            pns = boards.keys()
-            maxboard = 9
-            i = 0
-            while maxboard > 1:
-                pn = pns[i]
-                i = i + 1
-                maxboard = max(boards[pn].values())
-            result.append(pn)
-            for r in boards[pn].keys():
-                if boards[pn][r] == 1:
-                    for pnn in boards.keys():
-                        boards[pnn][r] = boards[pnn][r] - 1
-            del boards[pn]
-        return result
+    def board_order(boards, players):
+        w = []
+        for x in boards.keys():
+            bx = boards[x]
+            counts = {}
+            for r in bx.keys():
+                b = bx[r]
+                if b:
+                    c = counts.get(b, 0) + 1
+                    counts[b] = c
+            w.append((x, counts))
 
+        def cmp (v0, v1):
+            x0,c0 = v0
+            x1,c1 = v1
+            r0 = min(c0.keys()) - min(c1.keys())
+            if r0 == 0:
+                p0 = players[x0][0]
+                p1 = players[x1][0]
+                r0 = p1.elo - p0.elo
+            return r0
 
-    for round in range(1,prevr+1):
+        w.sort(cmp)
+        r = map(lambda(x,c) : x, w)
+        return r
+
+    for round in range(start, prevr + 1):
         data = read_data(club,round)
         parser = MyParser(formatter.NullFormatter(), club)
         parser.feed(data)
@@ -288,10 +293,10 @@ def predict(club, prevr, teamnr):
         if teamnr == 0 or team_it == teamnr:
             team = played_for(players, team_it)
             boards_ = boards(players, team, team_it, prevr+1)
-            boards_ordered = board_order(boards_)
+            boards_ordered = board_order(boards_, players)
             print "%s %i:" % (clubname, team_it)
-            template = "\t{:s}\t{:30s} ({:4s}) ( s / g) avg  tpr"
-            print template.format("code", "NAME", "elo")
+            template = "\t{:s}\t{:30s} ({:4s}) ({:5s}) {:4s} {:4s}"
+            print template.format("code", "NAME", "elo", " s / g", "avg", "tpr")
             result = []
             for pn in boards_ordered:
                 poss = players[pn]
@@ -352,6 +357,10 @@ def main():
                       dest = "teamnr", type="int",
                       default = 0,
                       help = "limit output to just one team")
+    parser.add_option("-s", "--startr",
+                      dest = "start", type = "int",
+                      default = 1
+    )
     options, args = parser.parse_args()
 
     if not os.path.exists(CACHE_DIR):
@@ -360,9 +369,10 @@ def main():
     club = options.club
     prevr = options.prevr
     teamnr = options.teamnr
-    for r in range(1,prevr+1):
+    start = options.start
+    for r in range(start, prevr+1):
         get(club,r)
-    predict(club,prevr,teamnr)
+    predict(start, club,prevr,teamnr)
 
 
 if __name__ == '__main__':
