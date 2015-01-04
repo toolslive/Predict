@@ -65,6 +65,25 @@ def to_dict(attrl):
         d[n] = v
     return d
 
+class Player():
+    def __init__(self, name, elo = None):
+        self.name = name
+        self.elo = elo
+
+    def __repr__(self):
+        return "Player('%s',%i)" % (self.name, self.elo)
+
+    def __str__(self):
+        return "%s (%i)" % (self.name, self.elo)
+
+
+def parse_elo(elo_s):
+    if elo_s == '':
+        elo = 0
+    else:
+        elo = int(elo_s)
+    return elo
+
 class MyParser(htmllib.HTMLParser):
     def __init__(self,f, club):
         htmllib.HTMLParser.__init__(self,f)
@@ -118,13 +137,15 @@ class MyParser(htmllib.HTMLParser):
                 self._board = 1
             self._pb = b
             if self._td == 5:
-                p = d['value']
+                p = Player(d['value'])
                 self._r[b][0] = p
                 #print p,'-',
             if self._td == 6:
-                self._r[b][0] = self._r[b][0] + ' (' + d['value'] + ')'
+                p = self._r[b][0]
+                elo = parse_elo(d['value'])
+                p.elo = elo
             if self._td == 7:
-                p =  d['value']
+                p =  Player(d['value'])
                 self._r[b][1] = p
                 #print p,
                 self._r[b]['board'] = self._board
@@ -132,7 +153,10 @@ class MyParser(htmllib.HTMLParser):
                 self._board = self._board + 1
                 #print self._team
             if self._td == 8:
-                self._r[b][1] = self._r[b][1] + ' (' + d['value'] + ')'
+                p = self._r[b][1]
+                elo = parse_elo(d['value'])
+                p.elo = elo
+
 
     def handle_data(self,data):
         if self._table == 3 and self._tr >= 2 and self._td == 1:
@@ -154,7 +178,8 @@ def take(bords, where, players, round):
         g = bords[k]
         team = g['team']
         side = where[team]
-        pn = g[side]
+        p = g[side]
+        print "take:pn.name = '%s'" % p.name
         score = g['score']
         value = {
             '1-0':1,
@@ -166,12 +191,14 @@ def take(bords, where, players, round):
             result = value[score]
             if side == 1:
                 result = 1 - result
-        if pn != " ()":
+
+        pn = p.name
+        if pn <> '':
             if not players.has_key(pn):
-                players[pn] = []
+                players[pn] = (p,[])
             sofar = players[pn]
             pos = round, g['team'], g['board'],result
-            sofar.append(pos)
+            sofar[1].append(pos)
 
 
 def get(club,r):
@@ -180,34 +207,35 @@ def get(club,r):
         data = get_round(club,r)
         write_data(data,club,r)
 
+
+def played_for(players, team):
+    result = []
+    for pn in players.keys():
+        poss = players[pn]
+        ok = False
+        for pos in poss[1]:
+            (r, t, b, pr) = pos
+            if t == team:
+                ok = True
+        if ok:
+            result.append(pn)
+    return result
+
+def boards(players, team, teamnr, prevr):
+    result = {}
+    for pn in team:
+        result[pn]={}
+        for round in range(1, prevr+1):
+            result[pn][round]=0
+        poss = players[pn]
+        for pos in poss[1]:
+            (r, t, b, pr) = pos
+            if t == teamnr:
+                result[pn][r]=b
+    return result
+
 def predict(club, prevr, teamnr):
     players = {}
-
-    def played_for(players, team):
-        result = []
-        for pn in players.keys():
-            poss = players[pn]
-            ok = False
-            for pos in poss:
-                (r, t, b, pr) = pos
-                if t == team:
-                    ok = True
-            if ok:
-                result.append(pn)
-        return result
-
-    def boards(players, team, teamnr, prevr):
-        result = {}
-        for pn in team:
-            result[pn]={}
-            for round in range(1, prevr+1):
-                result[pn][round]=0
-            poss = players[pn]
-            for pos in poss:
-                (r, t, b, pr) = pos
-                if t == teamnr:
-                    result[pn][r]=b
-        return result
 
     def board_order(boards):
         result = []
@@ -239,26 +267,6 @@ def predict(club, prevr, teamnr):
         clubname = parser._clubname
         take(r, where, players, round)
 
-#   for team_it in range(1, teams):
-#       if teamnr == 0 or team_it == teamnr:
-#           team = played_for(players, team_it)
-#           print "%s %i:" % (clubname, team_it)
-#           result = []
-#           for pn in team:
-#               poss = players[pn]
-#               bs = []
-#               for round in range(1, prevr+1):
-#                   played = False
-#                   for p in poss:
-#                       r, t,b,pr = p
-#                       if r == round and team_it == t:
-#                           bs.append(b)
-#                           played = True
-#                   if not played:
-#                       bs.append(9)
-#               m = min(bs)
-#               result.append((m,bs,pn))
-
     for team_it in range(1, teams):
         if teamnr == 0 or team_it == teamnr:
             team = played_for(players, team_it)
@@ -271,8 +279,8 @@ def predict(club, prevr, teamnr):
                 bs = []
                 for round in range(1, prevr+1):
                     played = False
-                    for p in poss:
-                        r, t,b,pr = p
+                    for p in poss[1]:
+                        r, t, b, pr = p
                         if r == round and team_it == t:
                             bs.append(b)
                             played = True
@@ -289,10 +297,16 @@ def predict(club, prevr, teamnr):
                         code = code + str(b)
                 r = 0
                 poss = players[pn]
-                for x in poss:
+                elo = poss[0].elo
+                for x in poss[1]:
                     r = r + x[3] # result
                 size = len(poss)
-                print "\t%s\t%30s (%4s / %i)" % (code,pn, r,size)
+
+                print "\t{:s}\t{:30s} ({:4d}) ({:.1f}/{:2d})".format(code,
+                                                                     pn,
+                                                                     elo,
+                                                                     r,
+                                                                     size)
 
 def main():
 
