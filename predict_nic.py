@@ -4,6 +4,7 @@ import os.path
 import sys
 import htmllib
 import formatter
+import math
 
 from optparse import OptionParser
 
@@ -83,6 +84,19 @@ def parse_elo(elo_s):
     else:
         elo = int(elo_s)
     return elo
+
+
+def tpr(avg_elo, score, ng):
+
+    eps = 0.005
+    if score < eps:
+        score = eps
+    f = float(score)/ float(ng)
+    a = (1.0 - f) / f
+    if a == 0.0:
+        a = eps
+    d = - 400.0 * math.log(a, 10)
+    return avg_elo + d
 
 class MyParser(htmllib.HTMLParser):
     def __init__(self,f, club):
@@ -179,7 +193,7 @@ def take(bords, where, players, round):
         team = g['team']
         side = where[team]
         p = g[side]
-        print "take:pn.name = '%s'" % p.name
+
         score = g['score']
         value = {
             '1-0':1,
@@ -192,12 +206,15 @@ def take(bords, where, players, round):
             if side == 1:
                 result = 1 - result
 
+        elo_opp = g[1-side].elo
+
         pn = p.name
         if pn <> '':
             if not players.has_key(pn):
                 players[pn] = (p,[])
             sofar = players[pn]
-            pos = round, g['team'], g['board'],result
+            pos = round, g['team'], g['board'],result, elo_opp
+            print g
             sofar[1].append(pos)
 
 
@@ -214,7 +231,7 @@ def played_for(players, team):
         poss = players[pn]
         ok = False
         for pos in poss[1]:
-            (r, t, b, pr) = pos
+            (r, t, b, pr, elo_opp) = pos
             if t == team:
                 ok = True
         if ok:
@@ -229,7 +246,7 @@ def boards(players, team, teamnr, prevr):
             result[pn][round]=0
         poss = players[pn]
         for pos in poss[1]:
-            (r, t, b, pr) = pos
+            (r, t, b, pr, elo_opp) = pos
             if t == teamnr:
                 result[pn][r]=b
     return result
@@ -273,6 +290,8 @@ def predict(club, prevr, teamnr):
             boards_ = boards(players, team, team_it, prevr+1)
             boards_ordered = board_order(boards_)
             print "%s %i:" % (clubname, team_it)
+            template = "\t{:s}\t{:30s} ({:4s}) ( s / g) avg  tpr"
+            print template.format("code", "NAME", "elo")
             result = []
             for pn in boards_ordered:
                 poss = players[pn]
@@ -280,7 +299,7 @@ def predict(club, prevr, teamnr):
                 for round in range(1, prevr+1):
                     played = False
                     for p in poss[1]:
-                        r, t, b, pr = p
+                        r, t, b, pr, elo_opp = p
                         if r == round and team_it == t:
                             bs.append(b)
                             played = True
@@ -298,15 +317,25 @@ def predict(club, prevr, teamnr):
                 r = 0
                 poss = players[pn]
                 elo = poss[0].elo
-                for x in poss[1]:
-                    r = r + x[3] # result
-                size = len(poss)
 
-                print "\t{:s}\t{:30s} ({:4d}) ({:.1f}/{:2d})".format(code,
-                                                                     pn,
-                                                                     elo,
-                                                                     r,
-                                                                     size)
+                for x in poss[1]:
+                    gr = x[3]
+                    r += gr
+
+                elo_opps = 0.0
+                for x in poss[1]:
+                    elo_opp = x[4]
+                    if elo_opp == 0:
+                        elo_opp = poss[0].elo
+                    elo_opps += elo_opp
+
+                ng = len(poss[1])
+
+                avg_elo_opps = float(elo_opps) / float (ng)
+                ptpr = tpr(avg_elo_opps, r, ng)
+                t = (code, pn, elo, r, ng, avg_elo_opps, ptpr)
+                template = "\t{:s}\t{:30s} ({:4d}) ({:.1f}/{:2d}) {:4.0f} {:4.0f}"
+                print template.format(*t)
 
 def main():
 
