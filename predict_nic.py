@@ -72,10 +72,10 @@ class Player():
         self.elo = elo
 
     def __repr__(self):
-        return "Player('%s',%i)" % (self.name, self.elo)
+        return "Player('%s',%s)" % (self.name, self.elo)
 
-    def __str__(self):
-        return "%s (%i)" % (self.name, self.elo)
+    __str__ = __repr__
+
 
 
 def parse_elo(elo_s):
@@ -153,15 +153,16 @@ class MyParser(htmllib.HTMLParser):
             if self._td == 5:
                 p = Player(d['value'])
                 self._r[b][0] = p
-                #print p,'-',
+
             if self._td == 6:
                 p = self._r[b][0]
                 elo = parse_elo(d['value'])
                 p.elo = elo
+                #print p,'-',
             if self._td == 7:
                 p =  Player(d['value'])
                 self._r[b][1] = p
-                #print p,
+
                 self._r[b]['board'] = self._board
                 self._r[b]['team'] = self._team
                 self._board = self._board + 1
@@ -170,7 +171,8 @@ class MyParser(htmllib.HTMLParser):
                 p = self._r[b][1]
                 elo = parse_elo(d['value'])
                 p.elo = elo
-
+                #print p,
+                #print
 
     def handle_data(self,data):
         if self._table == 3 and self._tr >= 2 and self._td == 1:
@@ -206,15 +208,18 @@ def take(bords, where, players, round):
             if side == 1:
                 result = 1 - result
 
-        elo_opp = g[1-side].elo
+            elo_opp = g[1-side].elo
 
-        pn = p.name
-        if pn <> '':
-            if not players.has_key(pn):
-                players[pn] = (p,[])
-            sofar = players[pn]
-            pos = round, g['team'], g['board'],result, elo_opp
-            sofar[1].append(pos)
+            pn = p.name
+            if pn <> '':
+                if not players.has_key(pn):
+                    players[pn] = (p,[])
+                sofar = players[pn]
+                pos = round, g['team'], g['board'],result, elo_opp
+                sofar[1].append(pos)
+        else: # probably forfait
+            pass
+
 
 
 def get(club,r):
@@ -295,7 +300,7 @@ def predict(start, club, prevr, teamnr):
             boards_ = boards(players, team, team_it, prevr+1)
             boards_ordered = board_order(boards_, players)
             print "%s %i:" % (clubname, team_it)
-            template = "\t{:s}\t{:30s} ({:4s}) ({:5s}) {:4s} {:4s}"
+            template = "\t{:s}\t{:30s}\t\t({:4s}) ({:5s})  {:4s} {:4s}"
             print template.format("code", "NAME", "elo", " s / g", "avg", "tpr")
             result = []
             for pn in boards_ordered:
@@ -339,7 +344,7 @@ def predict(start, club, prevr, teamnr):
                 avg_elo_opps = float(elo_opps) / float (ng)
                 ptpr = tpr(avg_elo_opps, r, ng)
                 t = (code, pn, elo, r, ng, avg_elo_opps, ptpr)
-                template = "\t{:s}\t{:30s} ({:4d}) ({:.1f}/{:2d}) {:4.0f} {:4.0f}"
+                template = "\t{:s}\t{:30s}  ({:4d}) ({:.1f}/{:2d}) {:4.0f} {:4.0f}"
                 print template.format(*t)
 
 def main():
