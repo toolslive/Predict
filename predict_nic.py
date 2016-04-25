@@ -135,7 +135,7 @@ class MyParser(htmllib.HTMLParser):
         b = self._tr -3
         if d.has_key('selected'):
             score = d['value']
-            if score == '\xbd-\xbd':
+            if score in ['\xbd-\xbd','5-5']:
                 score = '0.5'
             self._r[b] = {'score':score}
 
