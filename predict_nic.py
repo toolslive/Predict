@@ -179,7 +179,7 @@ class MyParser(htmllib.HTMLParser):
             line = data.strip()
             key = str(self._club)
             if line.find('(') > 0 and line.find(')'):
-                if line.find(key) > 0:
+                if line.find(key) > -1:
                     self._where[self._teams] = self._clubs
                     if self._clubname == "":
                         self._clubname = line[0:line.find('(')-3]
@@ -300,7 +300,7 @@ def predict(start, club, prevr, teamnr):
             boards_ = boards(players, team, team_it, prevr+1)
             boards_ordered = board_order(boards_, players)
             print "%s %i:" % (clubname, team_it)
-            template = "\t{:s}\t{:30s}\t\t({:4s}) ({:5s})  {:4s} {:4s}"
+            template = "    {:s}    {:30s}   ({:4s}) ({:5s})  {:4s} {:4s}"
             print template.format("code", "NAME", "elo", " s / g", "avg", "tpr")
             result = []
             for pn in boards_ordered:
@@ -344,7 +344,7 @@ def predict(start, club, prevr, teamnr):
                 avg_elo_opps = float(elo_opps) / float (ng)
                 ptpr = tpr(avg_elo_opps, r, ng)
                 t = (code, pn, elo, r, ng, avg_elo_opps, ptpr)
-                template = "\t{:s}\t{:30s}  ({:4d}) ({:.1f}/{:2d}) {:4.0f} {:4.0f}"
+                template = "    {:s}    {:30s}  ({:4d}) ({:.1f}/{:2d}) {:4.0f} {:4.0f}"
                 print template.format(*t)
 
 def main():
